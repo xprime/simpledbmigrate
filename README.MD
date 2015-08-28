@@ -1,6 +1,6 @@
 # SimpleDBMigrate
 
-Operate on Amazon Web Services simpledb no-sql database -
+Operate on Amazon Web Services simpledb no-sql database
 1. migrate from one account to another
 2. backup into a file system
 3. restore from backup
@@ -16,8 +16,8 @@ one is required as the tool does not directly take AWS shared
 key and secret.
 
 ### How to use
-1) Build the jar - `ant jar`
-2) Run as
+1. Build the jar - `ant jar`
+2. Run as
     ``` shell
     java -jar build/jar/simpledbmigrate.jar \
     --sourceRegionName ap-northeast-1 \
