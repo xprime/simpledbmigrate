@@ -17,8 +17,8 @@ key and secret.
 
 ### How to use
 1. Build the jar - `ant jar`
-2. Run as
-    ``` shell
+2. Run as -
+    ```
     java -jar build/jar/simpledbmigrate.jar \
     --sourceRegionName ap-northeast-1 \
     --sourceProfile src \
