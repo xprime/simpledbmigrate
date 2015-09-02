@@ -73,7 +73,7 @@ public class SimpleDBExporter {
     private void initializeOutputFile() throws IOException {
         outputFileName = domainName + ".sdb";
         File file = new File(outputFileName);
-        while (file.exists()) {
+        if (file.exists()) {
             file.delete();
         }
         file.createNewFile();
