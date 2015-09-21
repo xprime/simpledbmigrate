@@ -7,26 +7,21 @@
     <property name="build.dir" value="build"/>
     <property name="classes.dir" value="${build.dir}/classes"/>
     <property name="jar.dir" value="${build.dir}/jar"/>
-    <property name="support.lib.dir" value="support/"/>
     <property name="main-class" value="com.feedxl.tools.simpledb.SimpleDBMigrater"/>
     <property name="ivy.lib.dir" value="ivy/"/>
 
-    <path id="support.lib.path">
-        <fileset dir="${support.lib.dir}" includes="*.jar"/>
-    </path>
-
-    <taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="support.lib.path"/>
+    <taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant"/>
 
     <target name="clean">
         <delete dir="${build.dir}"/>
         <delete dir="${ivy.lib.dir}"/>
     </target>
 
-    <target name="resolve">
+    <target name="ivyresolve">
         <ivy:retrieve/>
     </target>
 
-    <target name="compile" depends="clean,resolve">
+    <target name="compile" depends="clean,ivyresolve">
         <mkdir dir="${classes.dir}"/>
         <javac srcdir="${src.dir}" destdir="${classes.dir}">
             <classpath>
@@ -45,5 +40,9 @@
             </manifest>
         </jar>
     </target>
+	
+    <target name="ivyreport" depends="ivyresolve">
+	    <ivy:report conf="default" graph="false" />
+    </target>		
 
 </project>

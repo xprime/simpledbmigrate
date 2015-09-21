@@ -3,3 +3,5 @@ build
 out
 .idea
 *.iml
+com.feedxl-SimpleDBMigrate-default.html
+ivy-report.css
