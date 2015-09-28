@@ -1,5 +1,14 @@
 <ivy-module version="2.0">
-    <info organisation="com.feedxl" module="SimpleDBMigrate"/>
+	<info organisation="feedxl" module="simpledbmigrate" status="integration"/>
+
+	<configurations defaultconfmapping="default">
+        <conf name="default"/>
+    </configurations>
+    
+	<publications>
+        <artifact name="simpledbmigrate" type="jar"/>
+    </publications> 
+    
     <dependencies>
         <dependency org="com.amazonaws" name="aws-java-sdk" rev="1.10.12"/>
         <dependency org="com.google.code.gson" name="gson" rev="2.3.1"/>

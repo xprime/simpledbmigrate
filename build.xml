@@ -34,7 +34,6 @@
 
     <target name="jar" depends="compile">
         <jar destfile="${jar.dir}/${ant.project.name}.jar" basedir="${classes.dir}">
-            <zipgroupfileset dir="${ivy.lib.dir}" includes="*.jar"/>
             <manifest>
                 <attribute name="Main-Class" value="${main-class}"/>
             </manifest>
@@ -44,5 +43,11 @@
     <target name="ivyreport" depends="ivyresolve">
 	    <ivy:report conf="default" graph="false" />
     </target>		
+	
+	<target name="ivypublish" depends="jar">
+		<ivy:publish resolver="local" pubrevision="1.0" overwrite="true">
+		   <artifacts pattern="${jar.dir}/[artifact].[ext]" />
+		</ivy:publish>	
+	</target>	
 
 </project>
