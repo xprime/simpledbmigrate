@@ -12,12 +12,14 @@ public class CommandLineOptionsProcessor {
     }
 
     public boolean processInput() {
-        if (args.length == 0 || args.length % 2 != 0) {
+    	argsMap = new HashMap();
+    	if (args.length == 0)
+    		return true;
+        if (args.length % 2 != 0) {
             printError("Invalid number of arguments");
             return false;
         }
         int i = 0;
-        argsMap = new HashMap();
         do {
             String key = args[i];
             if (key.length() <= 1) {

@@ -1,3 +1,4 @@
+*.sdb
 ivy
 build
 out

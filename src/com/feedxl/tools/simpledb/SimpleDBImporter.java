@@ -4,6 +4,7 @@ import com.amazonaws.handlers.AsyncHandler;
 import com.amazonaws.services.simpledb.AmazonSimpleDBAsyncClient;
 import com.amazonaws.services.simpledb.model.*;
 import com.feedxl.tools.aws.SimpleDBConnectionHelper;
+import com.feedxl.tools.util.CommandLineOptionsProcessor;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -25,19 +26,35 @@ public class SimpleDBImporter {
     private final String domainName;
     private final String fileName;
     private BufferedReader reader;
-    private String profileName;
+    private String profile;
     private AmazonSimpleDBAsyncClient connection;
     private int total = 0;
     private int completed = 0;
     private int inQueue = 0;
     private int failed = 0;
     private int threads = 0;
+	private CommandLineOptionsProcessor commandLineOptionsProcessor;
 
-    public SimpleDBImporter(String regionName, String domainName, String fileName, String profileName) {
+    public SimpleDBImporter(String [] args) {
+    	commandLineOptionsProcessor = new CommandLineOptionsProcessor(args);
+        if (!commandLineOptionsProcessor.processInput()) {
+            System.exit(-1);
+        }
+        if (!commandLineOptionsProcessor.validateMandatoryFields("domainName", "regionName", "fileName", "profile")) {
+            System.exit(-1);
+        }
+        
+        this.regionName = commandLineOptionsProcessor.getString("regionName");
+        this.domainName = commandLineOptionsProcessor.getString("domainName");
+        this.profile = commandLineOptionsProcessor.getString("profile");
+        this.fileName = commandLineOptionsProcessor.getString("fileName");
+	}
+    
+    public SimpleDBImporter(String regionName, String domainName, String fileName, String profile) {
         this.regionName = regionName;
         this.domainName = domainName;
         this.fileName = fileName;
-        this.profileName = profileName;
+        this.profile = profile;
     }
 
     public void importDB() throws IOException {
@@ -155,7 +172,7 @@ public class SimpleDBImporter {
     }
 
     private void initializeConnection() {
-        connection = new SimpleDBConnectionHelper().createSimpleDBAsyncConnection(profileName, regionName);
+        connection = new SimpleDBConnectionHelper().createSimpleDBAsyncConnection(profile, regionName);
     }
 
     private int getLineCount() throws IOException {
@@ -204,17 +221,6 @@ public class SimpleDBImporter {
     }
 
     public static void main(String [] args) throws IOException {
-        if (args.length < 4) {
-            System.out.println("Missing Arguments: [region-name] [domain-name] [file] [profile]");
-            return;
-        }
-
-        String regionName = args[0];
-        String domain = args[1];
-        String fileName = args[2];
-        String profileName = args[3];
-
-        SimpleDBImporter simpleDBExporter = new SimpleDBImporter(regionName, domain, fileName, profileName);
-        simpleDBExporter.importDB();
+        new SimpleDBImporter(args).importDB();
     }
 }

@@ -29,14 +29,13 @@ public class SimpleDBMigrater {
             System.exit(-1);
         }
         if (!commandLineOptionsProcessor.validateMandatoryFields("sourceRegionName",
-                "destinationRegionName", "destinationProfile")) {
+                "destinationRegionName", "destinationProfile", "sourceProfile")) {
             System.exit(-1);
         }
         if (!commandLineOptionsProcessor.validateFieldsTogether("startYear","endYear")) {
             System.exit(-1);
         }
-        commandLineOptionsProcessor.populateDefaultsIfMissing("sourceProfile", "default",
-                "timeFilter", "", "truncate", "false");
+        commandLineOptionsProcessor.populateDefaultsIfMissing("timeFilter", "", "truncate", "false");
     }
 
     public void migrate() throws IOException {

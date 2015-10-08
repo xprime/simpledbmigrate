@@ -49,5 +49,43 @@
 		   <artifacts pattern="${jar.dir}/[artifact].[ext]" />
 		</ivy:publish>	
 	</target>	
+	
+	<target name="runexport" depends="jar">		
+		<java classname="com.feedxl.tools.simpledb.SimpleDBExporter" fork="true">
+			<arg value="--domainName"/>
+			<arg value="${domainName}"/>
+			<arg value="--regionName"/>
+			<arg value="${regionName}"/>
+			<arg value="--profile"/>
+			<arg value="${profile}"/>
+			<arg value="--timeFilter"/>
+			<arg value="${timeFilter}"/>			
+			<classpath>
+				<pathelement location="${jar.dir}/${ant.project.name}.jar"/>
+                <fileset dir="${ivy.lib.dir}">
+                    <include name="**/*.jar"/>
+                </fileset>
+			</classpath>
+		</java>
+	</target>
+	
+	<target name="runimport" depends="jar">		
+			<java classname="com.feedxl.tools.simpledb.SimpleDBImporter" fork="true">
+				<arg value="--domainName"/>
+				<arg value="${domainName}"/>
+				<arg value="--regionName"/>
+				<arg value="${regionName}"/>
+				<arg value="--profile"/>
+				<arg value="${profile}"/>
+				<arg value="--fileName"/>
+				<arg value="${fileName}"/>			
+				<classpath>
+					<pathelement location="${jar.dir}/${ant.project.name}.jar"/>
+	                <fileset dir="${ivy.lib.dir}">
+	                    <include name="**/*.jar"/>
+	                </fileset>
+				</classpath>
+			</java>
+		</target>	
 
 </project>

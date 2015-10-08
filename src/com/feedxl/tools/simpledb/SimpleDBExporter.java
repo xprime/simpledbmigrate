@@ -8,6 +8,7 @@ import com.amazonaws.services.simpledb.model.SelectResult;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.feedxl.tools.aws.SimpleDBConnectionHelper;
+import com.feedxl.tools.util.CommandLineOptionsProcessor;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -22,30 +23,41 @@ import java.util.Map;
 public class SimpleDBExporter {
 
     public static final int LIMIT = 2500;
-    private final String regionName;
-    private final String domainName;
+    
+    private String regionName;
+    private String domainName;
     private BufferedWriter writer;
-    private String profileName;
+    private String profile;
     private String timeFilter;
     private String outputFileName;
+	private CommandLineOptionsProcessor commandLineOptionsProcessor;
 
-    public SimpleDBExporter(String regionName, String domainName, String profileName, String timeFilter) {
+    public SimpleDBExporter(String [] args) {
+    	commandLineOptionsProcessor = new CommandLineOptionsProcessor(args);
+        if (!commandLineOptionsProcessor.processInput()) {
+            System.exit(-1);
+        }
+        if (!commandLineOptionsProcessor.validateMandatoryFields("domainName", "regionName", "profile")) {
+            System.exit(-1);
+        }
+        commandLineOptionsProcessor.populateDefaultsIfMissing("timeFilter", "");
+        
+        this.regionName = commandLineOptionsProcessor.getString("regionName");
+        this.domainName = commandLineOptionsProcessor.getString("domainName");
+        this.profile = commandLineOptionsProcessor.getString("profile");
+        this.timeFilter = commandLineOptionsProcessor.getString("timeFilter");        
+	}
+
+	public SimpleDBExporter(String regionName, String domainName, String profileName, String timeFilter) {
         this.regionName = regionName;
         this.domainName = domainName;
-        this.profileName = profileName;
+        this.profile = profileName;
         this.timeFilter = timeFilter;
     }
-
-    public SimpleDBExporter(String regionName, String domainName, String timeFilter) {
-        this.regionName = regionName;
-        this.domainName = domainName;
-        this.timeFilter = timeFilter;
-        this.profileName = "default";
-    }
-
+	
     public String export() throws IOException {
         initializeOutputFile();
-        AmazonSimpleDBClient simpleDBClient = new SimpleDBConnectionHelper().createSimpleDBConnection(profileName, regionName);
+        AmazonSimpleDBClient simpleDBClient = new SimpleDBConnectionHelper().createSimpleDBConnection(profile, regionName);
         SimpleDBSelectIterator iterator = new SimpleDBSelectIterator(simpleDBClient, domainName, LIMIT, timeFilter);
         download(iterator);
         return outputFileName;
@@ -155,18 +167,6 @@ public class SimpleDBExporter {
     }
 
     public static void main(String[] args) throws IOException {
-        if (args.length < 2) {
-            System.out.println("Missing Arguments: [region-name] [domain-name] [(optional) timeFilter]");
-            return;
-        }
-
-        String regionName = args[0];
-        String domainName = args[1];
-        String timeFilter = "";
-        if (args.length == 3) {
-            timeFilter = args[2];
-        }
-
-        new SimpleDBExporter(regionName, domainName, timeFilter).export();
+        new SimpleDBExporter(args).export();
     }
 }
