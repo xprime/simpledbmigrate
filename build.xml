@@ -50,7 +50,7 @@
 		</ivy:publish>	
 	</target>	
 	
-	<target name="runexport" depends="jar">		
+	<target name="runexport">		
 		<java classname="com.feedxl.tools.simpledb.SimpleDBExporter" fork="true">
 			<arg value="--domainName"/>
 			<arg value="${domainName}"/>
@@ -69,7 +69,7 @@
 		</java>
 	</target>
 	
-	<target name="runimport" depends="jar">		
+	<target name="runimport">		
 			<java classname="com.feedxl.tools.simpledb.SimpleDBImporter" fork="true">
 				<arg value="--domainName"/>
 				<arg value="${domainName}"/>
