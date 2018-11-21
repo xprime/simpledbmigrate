@@ -9,26 +9,26 @@ import com.amazonaws.services.simpledb.AmazonSimpleDBClient;
 
 public class SimpleDBConnectionHelper {
 
-    public AmazonSimpleDBClient createSimpleDBConnection(String profileName, String regionName) {
-        AWSCredentials credentials = getAwsCredentials(profileName);
+    public AmazonSimpleDBClient createSimpleDBConnection(String awsProfileName, String awsRegionName) {
+        AWSCredentials credentials = getAwsCredentials(awsProfileName);
         AmazonSimpleDBClient simpleDBClient = new AmazonSimpleDBClient(credentials);
-        setRegion(simpleDBClient, regionName);
+        setRegion(simpleDBClient, awsRegionName);
         return simpleDBClient;
     }
 
-    public AmazonSimpleDBAsyncClient createSimpleDBAsyncConnection(String profileName, String regionName) {
-        AWSCredentials credentials = getAwsCredentials(profileName);
+    public AmazonSimpleDBAsyncClient createSimpleDBAsyncConnection(String awsProfileName, String awsRegionName) {
+        AWSCredentials credentials = getAwsCredentials(awsProfileName);
         AmazonSimpleDBAsyncClient simpleDBClient = new AmazonSimpleDBAsyncClient(credentials);
-        setRegion(simpleDBClient, regionName);
+        setRegion(simpleDBClient, awsRegionName);
         return simpleDBClient;
     }
 
-    private void setRegion(AmazonSimpleDBClient simpleDBClient, String regionName) {
-        Region region = Region.getRegion(Regions.fromName(regionName));
+    private void setRegion(AmazonSimpleDBClient simpleDBClient, String awsRegionName) {
+        Region region = Region.getRegion(Regions.fromName(awsRegionName));
         simpleDBClient.setRegion(region);
     }
 
-    private AWSCredentials getAwsCredentials(String profileName) {
-        return new ProfileCredentialsProvider(profileName).getCredentials();
+    private AWSCredentials getAwsCredentials(String awsProfileName) {
+        return new ProfileCredentialsProvider(awsProfileName).getCredentials();
     }
 }
