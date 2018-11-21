@@ -100,7 +100,7 @@ public class SimpleDBMigrater {
 
     private void _migrate(String domainName, String sourceRegionName, String sourceProfile, String destinationRegionName, String destinationProfile, String year) throws IOException {
         SimpleDBExporter exporter =
-                new SimpleDBExporter(sourceRegionName, domainName, sourceProfile, year);
+                new SimpleDBExporter(sourceProfile, sourceRegionName, domainName, year, "");
         String fileName = exporter.export();
         SimpleDBImporter importer =
                 new SimpleDBImporter(destinationRegionName, domainName, fileName, destinationProfile);

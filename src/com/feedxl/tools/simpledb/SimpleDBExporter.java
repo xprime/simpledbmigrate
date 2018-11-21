@@ -15,50 +15,51 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.DecimalFormat;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class SimpleDBExporter {
 
     public static final int LIMIT = 2500;
-    
-    private String regionName;
-    private String domainName;
-    private BufferedWriter writer;
-    private String profile;
-    private String timeFilter;
-    private String outputFileName;
-	private CommandLineOptionsProcessor commandLineOptionsProcessor;
 
-    public SimpleDBExporter(String [] args) {
-    	commandLineOptionsProcessor = new CommandLineOptionsProcessor(args);
+    private String awsRegionName;
+    private String sdbDomainName;
+    private BufferedWriter writer;
+    private String awsProfileName;
+    private String timeFilter;
+    private String nanoProfileName;
+    private String outputFileName;
+    private CommandLineOptionsProcessor commandLineOptionsProcessor;
+
+    public SimpleDBExporter(String[] args) {
+        commandLineOptionsProcessor = new CommandLineOptionsProcessor(args);
         if (!commandLineOptionsProcessor.processInput()) {
             System.exit(-1);
         }
-        if (!commandLineOptionsProcessor.validateMandatoryFields("domainName", "regionName", "profile")) {
+        if (!commandLineOptionsProcessor.validateMandatoryFields("sdbDomainName", "awsRegionName", "awsProfileName")) {
             System.exit(-1);
         }
         commandLineOptionsProcessor.populateDefaultsIfMissing("timeFilter", "");
-        
-        this.regionName = commandLineOptionsProcessor.getString("regionName");
-        this.domainName = commandLineOptionsProcessor.getString("domainName");
-        this.profile = commandLineOptionsProcessor.getString("profile");
-        this.timeFilter = commandLineOptionsProcessor.getString("timeFilter");        
-	}
+        commandLineOptionsProcessor.populateDefaultsIfMissing("nanoProfileName", "");
 
-	public SimpleDBExporter(String regionName, String domainName, String profileName, String timeFilter) {
-        this.regionName = regionName;
-        this.domainName = domainName;
-        this.profile = profileName;
-        this.timeFilter = timeFilter;
+        this.awsProfileName = commandLineOptionsProcessor.getString("awsProfileName");
+        this.awsRegionName = commandLineOptionsProcessor.getString("awsRegionName");
+        this.sdbDomainName = commandLineOptionsProcessor.getString("sdbDomainName");
+        this.timeFilter = commandLineOptionsProcessor.getString("timeFilter");
+        this.nanoProfileName = commandLineOptionsProcessor.getString("nanoProfileName");
     }
-	
+
+    public SimpleDBExporter(String awsProfileName, String awsRegionName, String sdbDomainName, String timeFilter, String nanoProfileName) {
+        this.awsProfileName = awsProfileName;
+        this.awsRegionName = awsRegionName;
+        this.sdbDomainName = sdbDomainName;
+        this.timeFilter = timeFilter;
+        this.nanoProfileName = nanoProfileName;
+    }
+
     public String export() throws IOException {
         initializeOutputFile();
-        AmazonSimpleDBClient simpleDBClient = new SimpleDBConnectionHelper().createSimpleDBConnection(profile, regionName);
-        SimpleDBSelectIterator iterator = new SimpleDBSelectIterator(simpleDBClient, domainName, LIMIT, timeFilter);
+        AmazonSimpleDBClient simpleDBClient = new SimpleDBConnectionHelper().createSimpleDBConnection(awsProfileName, awsRegionName);
+        SimpleDBSelectIterator iterator = new SimpleDBSelectIterator(simpleDBClient, sdbDomainName, LIMIT, timeFilter, nanoProfileName);
         download(iterator);
         return outputFileName;
     }
@@ -83,7 +84,7 @@ public class SimpleDBExporter {
     }
 
     private void initializeOutputFile() throws IOException {
-        outputFileName = domainName + ".sdb";
+        outputFileName = sdbDomainName + ".sdb";
         File file = new File(outputFileName);
         if (file.exists()) {
             file.delete();
@@ -96,21 +97,29 @@ public class SimpleDBExporter {
 
     private static class SimpleDBSelectIterator implements Iterator {
         private AmazonSimpleDBClient simpleDBClient;
-        private String domain;
+        private String sdbDomain;
         private int limit;
         private String timeFilter;
         private int total;
         private int downloaded;
         private String nextToken;
+        private String nanoProfileName;
 
-        public SimpleDBSelectIterator(AmazonSimpleDBClient simpleDBClient, String domain, int limit, final String timeFilter) {
+        public SimpleDBSelectIterator(AmazonSimpleDBClient simpleDBClient, String sdbDomain, int limit, final String timeFilter, String nanoProfileName) {
             this.simpleDBClient = simpleDBClient;
-            this.domain = domain;
+            this.sdbDomain = sdbDomain;
             this.limit = limit;
             this.timeFilter = timeFilter;
-            String selectExpression = "select count(*) from " + domain;
+            this.nanoProfileName = nanoProfileName;
+            String selectExpression = "select count(*) from " + sdbDomain;
+            List<String> filters = new ArrayList<>();
             if (!timeFilter.equals(""))
-                selectExpression += " where time like '" + timeFilter + "%'";
+                filters.add("time like '" + timeFilter + "%'");
+            if (!nanoProfileName.equals(""))
+                filters.add("profileName = '" + nanoProfileName + "'");
+            if (filters.size() > 0)
+                selectExpression += " where " + String.join(" and ", filters);
+            System.out.println("SimpleDBExporter: " + selectExpression);
             SelectRequest selectRequest = new SelectRequest(selectExpression);
             SelectResult result = simpleDBClient.select(selectRequest);
             List<Item> items = result.getItems();
@@ -118,7 +127,7 @@ public class SimpleDBExporter {
             for (Attribute attribute : attributes) {
                 if (attribute.getName().equals("Count")) {
                     total = Integer.parseInt(attribute.getValue());
-                    System.out.println("Total records - "+total);
+                    System.out.println("Total records - " + total);
                     break;
                 }
             }
@@ -133,7 +142,7 @@ public class SimpleDBExporter {
 
         @Override
         public Object next() {
-            String selectExpression = "select * from " + domain;
+            String selectExpression = "select * from " + sdbDomain;
             if (!timeFilter.equals("")) {
                 selectExpression += " where time like '" + timeFilter + "%'";
             }

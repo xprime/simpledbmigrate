@@ -14,18 +14,15 @@
 
     <target name="clean">
         <delete dir="${build.dir}"/>
-        <delete dir="${ivy.lib.dir}"/>
+        <delete dir="${ivy.lib.dir}/compile"/>
     </target>
 
-    <target name="ivyresolve">
-        <ivy:retrieve/>
-    </target>
-
-    <target name="compile" depends="clean,ivyresolve">
+    <target name="compile" depends="clean">
+        <ivy:retrieve pattern="${ivy.lib.dir}/compile/[artifact]-[revision].[ext]" conf="ant-compile" />
         <mkdir dir="${classes.dir}"/>
         <javac srcdir="${src.dir}" destdir="${classes.dir}">
             <classpath>
-                <fileset dir="${ivy.lib.dir}">
+                <fileset dir="${ivy.lib.dir}/compile">
                     <include name="**/*.jar"/>
                 </fileset>
             </classpath>
@@ -39,53 +36,61 @@
             </manifest>
         </jar>
     </target>
-	
-    <target name="ivyreport" depends="ivyresolve">
-	    <ivy:report conf="default" graph="false" />
-    </target>		
-	
-	<target name="ivypublish" depends="jar">
-		<ivy:publish resolver="local" pubrevision="1.0" overwrite="true">
-		   <artifacts pattern="${jar.dir}/[artifact].[ext]" />
-		</ivy:publish>	
-	</target>	
-	
-	<target name="runexport">		
-		<java classname="com.feedxl.tools.simpledb.SimpleDBExporter" fork="true">
-			<arg value="--domainName"/>
-			<arg value="${domainName}"/>
-			<arg value="--regionName"/>
-			<arg value="${regionName}"/>
-			<arg value="--profile"/>
-			<arg value="${profile}"/>
-			<arg value="--timeFilter"/>
-			<arg value="${timeFilter}"/>			
-			<classpath>
-				<pathelement location="${jar.dir}/${ant.project.name}.jar"/>
+
+    <target name="ivyreport">
+        <delete dir="${ivy.lib.dir}/ivyreport"/>
+        <ivy:retrieve pattern="${ivy.lib.dir}/ivyreport/[artifact]-[revision].[ext]" conf="eclipse" />
+        <ivy:report conf="eclipse" graph="false" todir="${build.dir}" />
+    </target>
+
+    <target name="ivypublish" depends="jar">
+        <ivy:publish resolver="local" pubrevision="1.0" overwrite="true">
+            <artifacts pattern="${jar.dir}/[artifact].[ext]" />
+        </ivy:publish>
+    </target>
+
+    <target name="ivyeclipse">
+        <delete dir="${ivy.lib.dir}/eclipse"/>
+        <ivy:retrieve pattern="${ivy.lib.dir}/eclipse/compile/[artifact].[ext]" conf="eclipse" />
+        <ivy:retrieve pattern="${ivy.lib.dir}/eclipse/test/[artifact].[ext]" conf="test" />
+    </target>
+
+    <target name="runexport">
+        <java classname="com.feedxl.tools.simpledb.SimpleDBExporter" fork="true">
+            <arg value="--domainName"/>
+            <arg value="${domainName}"/>
+            <arg value="--regionName"/>
+            <arg value="${regionName}"/>
+            <arg value="--profile"/>
+            <arg value="${profile}"/>
+            <arg value="--timeFilter"/>
+            <arg value="${timeFilter}"/>
+            <classpath>
+                <pathelement location="${jar.dir}/${ant.project.name}.jar"/>
                 <fileset dir="${ivy.lib.dir}">
                     <include name="**/*.jar"/>
                 </fileset>
-			</classpath>
-		</java>
-	</target>
-	
-	<target name="runimport">		
-			<java classname="com.feedxl.tools.simpledb.SimpleDBImporter" fork="true">
-				<arg value="--domainName"/>
-				<arg value="${domainName}"/>
-				<arg value="--regionName"/>
-				<arg value="${regionName}"/>
-				<arg value="--profile"/>
-				<arg value="${profile}"/>
-				<arg value="--fileName"/>
-				<arg value="${fileName}"/>			
-				<classpath>
-					<pathelement location="${jar.dir}/${ant.project.name}.jar"/>
-	                <fileset dir="${ivy.lib.dir}">
-	                    <include name="**/*.jar"/>
-	                </fileset>
-				</classpath>
-			</java>
-		</target>	
+            </classpath>
+        </java>
+    </target>
+
+    <target name="runimport">
+        <java classname="com.feedxl.tools.simpledb.SimpleDBImporter" fork="true">
+            <arg value="--domainName"/>
+            <arg value="${domainName}"/>
+            <arg value="--regionName"/>
+            <arg value="${regionName}"/>
+            <arg value="--profile"/>
+            <arg value="${profile}"/>
+            <arg value="--fileName"/>
+            <arg value="${fileName}"/>
+            <classpath>
+                <pathelement location="${jar.dir}/${ant.project.name}.jar"/>
+                <fileset dir="${ivy.lib.dir}">
+                    <include name="**/*.jar"/>
+                </fileset>
+            </classpath>
+        </java>
+    </target>
 
 </project>

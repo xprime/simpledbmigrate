@@ -1,17 +1,18 @@
 <ivy-module version="2.0">
-	<info organisation="feedxl" module="simpledbmigrate" status="integration"/>
 
-	<configurations defaultconfmapping="default">
-        <conf name="default"/>
+    <info organisation="feedxl" module="simpledbmigrate" status="integration"/>
+
+    <configurations defaultconfmapping="eclipse->default">
+        <conf name="eclipse" />
+        <conf name="test" />
+        <conf name="ant" extends="eclipse" />
+        <conf name="ant-compile" extends="ant" />
     </configurations>
-    
-	<publications>
-        <artifact name="simpledbmigrate" type="jar"/>
-    </publications> 
-    
+
     <dependencies>
         <dependency org="com.amazonaws" name="aws-java-sdk" rev="1.10.12"/>
         <dependency org="com.google.code.gson" name="gson" rev="2.3.1"/>
     </dependencies>
+
 </ivy-module>
 
