@@ -4,34 +4,63 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class CommandLineOptionsProcessor {
-    private String[] args;
-    private Map<String, String> argsMap;
+    private String[] arguments;
+    private Map<String, String> mappedArguments;
 
-    public CommandLineOptionsProcessor(String[] args) {
-        this.args = args;
+    public CommandLineOptionsProcessor(String[] arguments) {
+        this.arguments = arguments;
     }
 
     public boolean processInput() {
-    	argsMap = new HashMap();
-    	if (args.length == 0)
-    		return true;
-        if (args.length % 2 != 0) {
+        mappedArguments = new HashMap();
+        if (!hasArguments())
+            return true;
+        if (!hasArgumentsInPair()) {
             printError("Invalid number of arguments");
             return false;
         }
         int i = 0;
         do {
-            String key = args[i];
-            if (key.length() <= 1) {
-                printError("Invalid argument name "+key);
+            String rawName = arguments[i];
+            if (!hasDoubleHyphenPrefix(rawName)) {
+                printError("Invalid argument name : " + rawName);
                 return false;
             }
-            key = key.substring(2);
-            String value = args[i + 1];
-            argsMap.put(key, value);
+            String name = removeDoubleHyphenPrefix(rawName);
+            if (name.equals("")) {
+                printError("Empty argument name after -- : " + rawName);
+                return false;
+            }
+            String value = arguments[i + 1];
+            mappedArguments.put(name, value);
             i += 2;
-        } while (i < args.length);
+        } while (i < arguments.length);
         return true;
+    }
+
+    private String getName(String arg) {
+        String name = arg;
+        if (!hasDoubleHyphenPrefix(name)) {
+            printError("Invalid argument name : " + name);
+            return "";
+        }
+        return removeDoubleHyphenPrefix(name);
+    }
+
+    private String removeDoubleHyphenPrefix(String name) {
+        return name.substring(2);
+    }
+
+    private boolean hasDoubleHyphenPrefix(String name) {
+        return name.length() >= 2 && name.startsWith("--");
+    }
+
+    private boolean hasArgumentsInPair() {
+        return arguments.length % 2 == 0;
+    }
+
+    private boolean hasArguments() {
+        return arguments.length > 0;
     }
 
     private void printError(String error) {
@@ -40,36 +69,36 @@ public class CommandLineOptionsProcessor {
 
     public boolean validateMandatoryFields(String... fields) {
         for (String field : fields) {
-            String value = argsMap.get(field);
+            String value = mappedArguments.get(field);
             if (value == null || value.equals("")) {
-                printError("Required field missing - "+field);
+                printError("Required field missing - " + field);
                 return false;
             }
         }
         return true;
     }
 
-    public void populateDefaultsIfMissing(String ... values) {
+    public void populateDefaultsIfMissing(String... values) {
         if (values.length % 2 != 0) {
             throw new RuntimeException("Odd number of values to populate defaults");
         }
-        int i=0;
+        int i = 0;
         do {
-            if (argsMap.containsKey(values[i])) {
+            if (mappedArguments.containsKey(values[i])) {
                 i += 2;
                 continue;
             }
-            argsMap.put(values[i], values[i+1]);
+            mappedArguments.put(values[i], values[i + 1]);
             i += 2;
         } while (i < values.length);
     }
 
-    public String getString(String key) {
-        return argsMap.get(key);
+    public String getString(String name) {
+        return mappedArguments.get(name);
     }
 
-    public boolean hasParam(String key) {
-        return argsMap.containsKey(key);
+    public boolean hasParam(String name) {
+        return mappedArguments.containsKey(name);
     }
 
     public int getInt(String key) {
@@ -81,8 +110,8 @@ public class CommandLineOptionsProcessor {
         return (hasParam(key1) && hasParam(key2)) || (!hasParam(key1) && !hasParam(key2));
     }
 
-    public boolean getBoolean(String key) {
-        String value = getString(key);
+    public boolean getBoolean(String name) {
+        String value = getString(name);
         return Boolean.parseBoolean(value);
     }
 }

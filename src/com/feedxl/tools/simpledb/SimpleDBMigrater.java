@@ -103,7 +103,7 @@ public class SimpleDBMigrater {
                 new SimpleDBExporter(sourceProfile, sourceRegionName, domainName, year, "");
         String fileName = exporter.export();
         SimpleDBImporter importer =
-                new SimpleDBImporter(destinationRegionName, domainName, fileName, destinationProfile);
+                new SimpleDBImporter(destinationProfile, destinationRegionName, domainName, fileName);
         importer.importDB();
     }
 

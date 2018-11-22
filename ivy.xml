@@ -12,6 +12,7 @@
     <dependencies>
         <dependency org="com.amazonaws" name="aws-java-sdk" rev="1.10.12"/>
         <dependency org="com.google.code.gson" name="gson" rev="2.3.1"/>
+        <dependency org="junit" name="junit" rev="4.12" conf="test->default"/>
     </dependencies>
 
 </ivy-module>

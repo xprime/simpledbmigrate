@@ -35,7 +35,7 @@ public class SimpleDBExporter {
         if (!commandLineOptionsProcessor.processInput()) {
             System.exit(-1);
         }
-        if (!commandLineOptionsProcessor.validateMandatoryFields("sdbDomainName", "awsRegionName", "awsProfileName")) {
+        if (!commandLineOptionsProcessor.validateMandatoryFields("awsProfileName", "awsRegionName", "sdbDomainName")) {
             System.exit(-1);
         }
         commandLineOptionsProcessor.populateDefaultsIfMissing("timeFilter", "");
@@ -111,16 +111,12 @@ public class SimpleDBExporter {
             this.limit = limit;
             this.timeFilter = timeFilter;
             this.nanoProfileName = nanoProfileName;
-            String selectExpression = "select count(*) from " + sdbDomain;
-            List<String> filters = new ArrayList<>();
-            if (!timeFilter.equals(""))
-                filters.add("time like '" + timeFilter + "%'");
-            if (!nanoProfileName.equals(""))
-                filters.add("profileName = '" + nanoProfileName + "'");
-            if (filters.size() > 0)
-                selectExpression += " where " + String.join(" and ", filters);
-            System.out.println("SimpleDBExporter: " + selectExpression);
-            SelectRequest selectRequest = new SelectRequest(selectExpression);
+            init(simpleDBClient);
+            log(true);
+        }
+
+        private void init(AmazonSimpleDBClient simpleDBClient) {
+            SelectRequest selectRequest = getRowCountSelectRequest();
             SelectResult result = simpleDBClient.select(selectRequest);
             List<Item> items = result.getItems();
             List<Attribute> attributes = items.get(0).getAttributes();
@@ -132,7 +128,23 @@ public class SimpleDBExporter {
                 }
             }
             downloaded = 0;
-            log(true);
+        }
+
+        private SelectRequest getRowCountSelectRequest() {
+            return new SelectRequest(getSelectQuery("count(*)"));
+        }
+
+        private String getSelectQuery(final String columns) {
+            String selectExpression = "select " + columns + " from " + this.sdbDomain;
+            List<String> filters = new ArrayList<>();
+            if (!this.timeFilter.equals(""))
+                filters.add("time like '" + this.timeFilter + "%'");
+            if (!this.nanoProfileName.equals(""))
+                filters.add("profileName = '" + this.nanoProfileName + "'");
+            if (filters.size() > 0)
+                selectExpression += " where " + String.join(" and ", filters);
+            System.out.println("SimpleDBExporter: " + selectExpression);
+            return selectExpression;
         }
 
         @Override
@@ -142,10 +154,7 @@ public class SimpleDBExporter {
 
         @Override
         public Object next() {
-            String selectExpression = "select * from " + sdbDomain;
-            if (!timeFilter.equals("")) {
-                selectExpression += " where time like '" + timeFilter + "%'";
-            }
+            String selectExpression = getSelectQuery("*");
             selectExpression += " limit " + limit;
             SelectRequest selectRequest = new SelectRequest(selectExpression);
             if (nextToken != null)

@@ -10,11 +10,17 @@
     <property name="main-class" value="com.feedxl.tools.simpledb.SimpleDBMigrater"/>
     <property name="ivy.lib.dir" value="ivy/"/>
 
+    <property name="src.tests" value="test/" />
+    <property name="test.classes.dir" value="${build.dir}/test/classes/" />
+    <property name="test.results.dir" value="${build.dir}/test/results/" />
+    <property name="test.report.dir" value="${build.dir}/test/report/" />
+
     <taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant"/>
 
     <target name="clean">
         <delete dir="${build.dir}"/>
         <delete dir="${ivy.lib.dir}/compile"/>
+        <delete dir="${ivy.lib.dir}/test"/>
     </target>
 
     <target name="compile" depends="clean">
@@ -29,7 +35,51 @@
         </javac>
     </target>
 
-    <target name="jar" depends="compile">
+    <target name="testscompile" depends="compile">
+        <mkdir dir="${test.classes.dir}"/>
+        <ivy:retrieve pattern="${ivy.lib.dir}/test/[artifact]-[revision].[ext]" conf="test" />
+        <javac srcdir="${src.tests}" destdir="${test.classes.dir}" source="1.8" target="1.8" debug="true" debuglevel="lines,vars,source" encoding="utf8">
+            <classpath>
+                <pathelement location="${classes.dir}"/>
+                <fileset dir="${ivy.lib.dir}/compile">
+                    <include name="**/*.jar" />
+                </fileset>
+                <fileset dir="${ivy.lib.dir}/test">
+                    <include name="**/*.jar" />
+                </fileset>
+            </classpath>
+        </javac>
+    </target>
+
+    <target name="tests" depends="testscompile">
+        <delete dir="${test.results.dir}" />
+        <mkdir dir="${test.results.dir}" />
+        <delete dir="${test.report.dir}" />
+        <mkdir dir="${test.report.dir}" />
+        <junit printsummary="yes" haltonfailure="yes" fork="yes" forkmode="perBatch" failureproperty="test.failed">
+            <classpath>
+                <pathelement location="${classes.dir}"/>
+                <pathelement location="${test.classes.dir}"/>
+                <fileset dir="${ivy.lib.dir}/compile">
+                    <include name="**/*.jar" />
+                </fileset>
+                <fileset dir="${ivy.lib.dir}/test">
+                    <include name="**/*.jar" />
+                </fileset>
+            </classpath>
+
+            <formatter type="xml"/>
+
+            <batchtest todir="${test.results.dir}">
+                <fileset dir="${src.tests}">
+                    <include name="**/*Test.java"/>
+                </fileset>
+            </batchtest>
+        </junit>
+        <fail message="Test failure detected, check test results" if="test.failed" />
+    </target>
+
+    <target name="jar" depends="tests">
         <jar destfile="${jar.dir}/${ant.project.name}.jar" basedir="${classes.dir}">
             <manifest>
                 <attribute name="Main-Class" value="${main-class}"/>
@@ -55,39 +105,41 @@
         <ivy:retrieve pattern="${ivy.lib.dir}/eclipse/test/[artifact].[ext]" conf="test" />
     </target>
 
-    <target name="runexport">
+    <target name="runexport" depends="jar">
         <java classname="com.feedxl.tools.simpledb.SimpleDBExporter" fork="true">
-            <arg value="--domainName"/>
-            <arg value="${domainName}"/>
-            <arg value="--regionName"/>
-            <arg value="${regionName}"/>
-            <arg value="--profile"/>
-            <arg value="${profile}"/>
+            <arg value="--awsProfileName"/>
+            <arg value="${awsProfileName}"/>
+            <arg value="--awsRegionName"/>
+            <arg value="${awsRegionName}"/>
+            <arg value="--sdbDomainName"/>
+            <arg value="${sdbDomainName}"/>
             <arg value="--timeFilter"/>
             <arg value="${timeFilter}"/>
+            <arg value="--nanoProfileName"/>
+            <arg value="${nanoProfileName}"/>
             <classpath>
                 <pathelement location="${jar.dir}/${ant.project.name}.jar"/>
-                <fileset dir="${ivy.lib.dir}">
-                    <include name="**/*.jar"/>
+                <fileset dir="${ivy.lib.dir}/compile">
+                    <include name="**/*.jar" />
                 </fileset>
             </classpath>
         </java>
     </target>
 
-    <target name="runimport">
+    <target name="runimport" depends="jar">
         <java classname="com.feedxl.tools.simpledb.SimpleDBImporter" fork="true">
-            <arg value="--domainName"/>
-            <arg value="${domainName}"/>
-            <arg value="--regionName"/>
-            <arg value="${regionName}"/>
-            <arg value="--profile"/>
-            <arg value="${profile}"/>
+            <arg value="--awsProfileName"/>
+            <arg value="${awsProfileName}"/>
+            <arg value="--awsRegionName"/>
+            <arg value="${awsRegionName}"/>
+            <arg value="--sdbDomainName"/>
+            <arg value="${sdbDomainName}"/>
             <arg value="--fileName"/>
             <arg value="${fileName}"/>
             <classpath>
                 <pathelement location="${jar.dir}/${ant.project.name}.jar"/>
-                <fileset dir="${ivy.lib.dir}">
-                    <include name="**/*.jar"/>
+                <fileset dir="${ivy.lib.dir}/compile">
+                    <include name="**/*.jar" />
                 </fileset>
             </classpath>
         </java>

@@ -22,39 +22,39 @@ public class SimpleDBImporter {
 
     public static final int BATCH_LIMIT = 25;
     public static final int IN_QUEUE_LIMIT = 250;
-    private final String regionName;
-    private final String domainName;
+    private final String awsRegionName;
+    private final String awsDomainName;
     private final String fileName;
     private BufferedReader reader;
-    private String profile;
+    private String awsProfileName;
     private AmazonSimpleDBAsyncClient connection;
     private int total = 0;
     private int completed = 0;
     private int inQueue = 0;
     private int failed = 0;
     private int threads = 0;
-	private CommandLineOptionsProcessor commandLineOptionsProcessor;
+    private CommandLineOptionsProcessor commandLineOptionsProcessor;
 
-    public SimpleDBImporter(String [] args) {
-    	commandLineOptionsProcessor = new CommandLineOptionsProcessor(args);
+    public SimpleDBImporter(String[] args) {
+        commandLineOptionsProcessor = new CommandLineOptionsProcessor(args);
         if (!commandLineOptionsProcessor.processInput()) {
             System.exit(-1);
         }
-        if (!commandLineOptionsProcessor.validateMandatoryFields("domainName", "regionName", "fileName", "profile")) {
+        if (!commandLineOptionsProcessor.validateMandatoryFields("awsProfileName", "awsRegionName", "sdbDomainName", "fileName")) {
             System.exit(-1);
         }
-        
-        this.regionName = commandLineOptionsProcessor.getString("regionName");
-        this.domainName = commandLineOptionsProcessor.getString("domainName");
-        this.profile = commandLineOptionsProcessor.getString("profile");
+
+        this.awsProfileName = commandLineOptionsProcessor.getString("awsProfileName");
+        this.awsRegionName = commandLineOptionsProcessor.getString("awsRegionName");
+        this.awsDomainName = commandLineOptionsProcessor.getString("sdbDomainName");
         this.fileName = commandLineOptionsProcessor.getString("fileName");
-	}
-    
-    public SimpleDBImporter(String regionName, String domainName, String fileName, String profile) {
-        this.regionName = regionName;
-        this.domainName = domainName;
+    }
+
+    public SimpleDBImporter(String awsProfileName, String awsRegionName, String awsDomainName, String fileName) {
+        this.awsRegionName = awsRegionName;
+        this.awsDomainName = awsDomainName;
+        this.awsProfileName = awsProfileName;
         this.fileName = fileName;
-        this.profile = profile;
     }
 
     public void importDB() throws IOException {
@@ -66,19 +66,21 @@ public class SimpleDBImporter {
         log(true);
         while (threads != 0) {
             try {
+                System.out.println("Checking status - pending " + threads + " threads");
                 Thread.sleep(1000 * 5);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
+        System.out.println("DONE...");
     }
 
     private void createDomainIfRequired() {
         ListDomainsRequest listDomainRequest = new ListDomainsRequest();
         ListDomainsResult listDomainsResult = connection.listDomains(listDomainRequest);
         List<String> domainNames = listDomainsResult.getDomainNames();
-        if (!domainNames.contains(domainName)) {
-            CreateDomainRequest createDomainRequest = new CreateDomainRequest(domainName);
+        if (!domainNames.contains(awsDomainName)) {
+            CreateDomainRequest createDomainRequest = new CreateDomainRequest(awsDomainName);
             connection.createDomain(createDomainRequest);
         }
     }
@@ -89,22 +91,26 @@ public class SimpleDBImporter {
         List<ReplaceableItem> items;
         do {
             items = generateItems();
-            BatchPutAttributesRequest request = new BatchPutAttributesRequest(domainName, items);
+            BatchPutAttributesRequest request = new BatchPutAttributesRequest(awsDomainName, items);
             inQueue += items.size();
             try {
                 upload(request);
             } catch (Exception e) {
+                System.out.println("Upload Error - " + items.size() + " items");
                 System.out.println(e.getLocalizedMessage());
                 inQueue -= items.size();
                 failed += items.size();
             }
             if (inQueue > IN_QUEUE_LIMIT) {
+                System.out.println("Queue limit exceeded. Will requeue after the queue size comes down");
                 break;
             }
         } while (items.size() == BATCH_LIMIT);
 
-        if (isAllItemsUploaded())
+        if (isAllItemsUploaded()) {
+            System.out.println("All items sent for upload. Now waiting for it to finish...");
             reader.close();
+        }
     }
 
     private boolean isAllItemsUploaded() {
@@ -172,11 +178,11 @@ public class SimpleDBImporter {
     }
 
     private void initializeConnection() {
-        connection = new SimpleDBConnectionHelper().createSimpleDBAsyncConnection(profile, regionName);
+        connection = new SimpleDBConnectionHelper().createSimpleDBAsyncConnection(awsProfileName, awsRegionName);
     }
 
     private int getLineCount() throws IOException {
-        LineNumberReader  lnr = new LineNumberReader(new FileReader(new File(fileName)));
+        LineNumberReader lnr = new LineNumberReader(new FileReader(new File(fileName)));
         lnr.skip(Long.MAX_VALUE);
         lnr.close();
         return lnr.getLineNumber();
@@ -186,7 +192,7 @@ public class SimpleDBImporter {
         List<ReplaceableItem> items = new ArrayList<ReplaceableItem>();
         String line;
         Gson gson = new GsonBuilder().create();
-        while((line = reader.readLine()) != null) {
+        while ((line = reader.readLine()) != null) {
             Map itemInfo = gson.fromJson(line, Map.class);
             ReplaceableItem item = getReplaceableItem(itemInfo);
             items.add(item);
@@ -205,7 +211,7 @@ public class SimpleDBImporter {
         List rawAttributes = (List) itemInfo.get("attributes");
         for (Object rAttr : rawAttributes) {
             Map attr = (Map) rAttr;
-            ReplaceableAttribute replaceableAttribute = new ReplaceableAttribute((String)attr.get("name"),(String)attr.get("value"),true);
+            ReplaceableAttribute replaceableAttribute = new ReplaceableAttribute((String) attr.get("name"), (String) attr.get("value"), true);
             replaceableAttributes.add(replaceableAttribute);
         }
         item.setAttributes(replaceableAttributes);
@@ -220,7 +226,7 @@ public class SimpleDBImporter {
         total = getLineCount();
     }
 
-    public static void main(String [] args) throws IOException {
+    public static void main(String[] args) throws IOException {
         new SimpleDBImporter(args).importDB();
     }
 }
